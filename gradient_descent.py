@@ -11,10 +11,22 @@ def gradient(f, x, h=1e-6):
         grad[_] = (f(x+e) - f(x))/h
     return grad
 
+def with_counter(f):
+    count = 0
+    def counted(x):
+        nonlocal count
+        count += 1
+        return f(x)
+
+    def get_count():
+        return count
+
+    return counted, get_count
+
 def gradient_descent(f, x_start, step = None, max_iter=10**6, eps = 1e-4, epsilon=1e-4):
     x = np.array(x_start, dtype=float)
     steps = [x.copy()]
-    for i in range(max_iter):
+    for iteration in range(max_iter):
         grad = gradient(f, x)
         if np.linalg.norm(grad) < epsilon:
             break
@@ -32,10 +44,10 @@ def gradient_descent(f, x_start, step = None, max_iter=10**6, eps = 1e-4, epsilo
 
         x = x - alpha*grad
         steps.append(x.copy())
-        if i>=max_iter:
-            return "max_iter reached"
-
-    return x, f(x), i, steps
+    else:
+        return "max_iter reached"
+    gradient_norm = np.linalg.norm(gradient(f, x))
+    return x, f(x), iteration, steps, gradient_norm
 def quadratic(a, b):
     def f(x):
         return a * x[0]**2 + b * x[1]**2
@@ -43,5 +55,11 @@ def quadratic(a, b):
 def rosenbrock(x):
     return (1 - x[0])**2 + 100 * (x[1] - x[0]**2)**2
 
-x, fx, iters, steps = gradient_descent(rosenbrock, [2.0, 2.5])
-print(x, fx, iters, np.linalg.norm(gradient(rosenbrock, x)))
+f, get_count = with_counter(rosenbrock)
+result = gradient_descent(f, [5.0, -5.0])
+
+if result == "max_iter reached":
+    print("max_iter reached")
+else:
+    x, fx, iters, steps, grad = result
+    print(x, fx, iters, grad, get_count())
